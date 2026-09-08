@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ctrlz.exe - Paint</title>
+<meta name="description" content="$CTRLZ. drawn in paint, launched on chain. can't be undone.">
+<link rel="icon" href="assets/ctrlz-flying.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#000000;
+    --paper:#ffffff;
+    --grey:#c0c0c0;
+    --grey-dark:#808080;
+    --blue:#000080;
+    --red:#ff0000;
+    --yellow:#ffe600;
+    --green:#008000;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--grey) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grey) 1px, transparent 1px);
+    background-size:22px 22px;
+    background-position:-1px -1px;
+    color:var(--ink);
+    font-family:'VT323', monospace;
+    font-size:20px;
+    cursor:crosshair;
+  }
+  h1,h2,h3,.pixel{
+    font-family:'Press Start 2P', monospace;
+    line-height:1.5;
+    margin:0;
+  }
+  a{color:var(--blue);}
+  img{image-rendering:pixelated;}
+
+  /* ===== flying dragon, bounces DVD-logo style ===== */
+  #flyer{
+    position:fixed;
+    top:80px; left:80px;
+    width:120px;
+    z-index:999;
+    pointer-events:auto;
+    filter:drop-shadow(3px 3px 0 rgba(0,0,0,.25));
+    transition:filter .1s;
+  }
+  #flyer img{width:100%; display:block;}
+  #flyer:hover{filter:drop-shadow(3px 3px 0 rgba(255,0,0,.5)) brightness(1.05);}
+  #flyer .poke-txt{
+    position:absolute; top:-26px; left:50%; transform:translateX(-50%);
+    background:var(--yellow); border:2px solid var(--ink); padding:2px 6px;
+    font-family:'VT323'; font-size:15px; white-space:nowrap; display:none;
+  }
+  #flyer:active .poke-txt{display:block;}
+
+  /* ===== window chrome ===== */
+  .window{
+    max-width:920px; margin:26px auto; background:var(--grey);
+    border:2px solid var(--ink);
+    box-shadow:4px 4px 0 var(--ink);
+  }
+  .titlebar{
+    background:linear-gradient(180deg,#0a2fc4,var(--blue));
+    color:#fff; display:flex; align-items:center; justify-content:space-between;
+    padding:5px 8px; font-family:'VT323'; font-size:18px;
+  }
+  .titlebar .t{display:flex; align-items:center; gap:6px;}
+  .titlebar .t img{width:16px; height:16px;}
+  .winbtns{display:flex; gap:4px;}
+  .winbtns span{
+    width:18px; height:18px; background:var(--grey); border:1px solid #fff;
+    box-shadow:1px 1px 0 #444 inset;
+    display:flex; align-items:center; justify-content:center; font-size:12px; color:#000;
+    cursor:pointer;
+  }
+  .toolbar{
+    background:var(--grey); border-bottom:2px solid var(--ink);
+    padding:6px 8px; display:flex; gap:6px; flex-wrap:wrap;
+  }
+  .tool{
+    width:28px; height:26px; background:var(--grey);
+    border-top:2px solid #fff; border-left:2px solid #fff;
+    border-bottom:2px solid var(--grey-dark); border-right:2px solid var(--grey-dark);
+    display:flex; align-items:center; justify-content:center; font-size:14px;
+  }
+  .canvas{
+    background:var(--paper); border:2px solid var(--ink); margin:10px;
+    padding:0;
+  }
+
+  /* ===== hero ===== */
+  .hero{padding:44px 26px 30px; text-align:center; position:relative;}
+  .hero h1{
+    font-size:clamp(24px,5.5vw,44px);
+    letter-spacing:1px;
+  }
+  .hero h1 span{color:var(--red);}
+  .hero .sub{
+    font-size:22px; margin-top:14px; max-width:44ch; margin-left:auto; margin-right:auto;
+  }
+  .frame{
+    margin:24px auto 6px; max-width:460px; border:3px dashed var(--ink);
+    padding:6px; background:var(--paper);
+    animation:ants 8s linear infinite;
+  }
+  @keyframes ants{ to{ background-position:80px 0, 0 80px, -80px 0, 0 -80px; } }
+  .frame img{width:100%; display:block; border:2px solid var(--ink);}
+  .caption{font-size:15px; color:var(--grey-dark); margin-top:6px;}
+
+  .cta-row{display:flex; gap:14px; justify-content:center; margin-top:26px; flex-wrap:wrap;}
+  .btn95{
+    font-family:'VT323'; font-size:20px; padding:10px 22px;
+    background:var(--grey); border-top:2px solid #fff; border-left:2px solid #fff;
+    border-bottom:2px solid var(--grey-dark); border-right:2px solid var(--grey-dark);
+    cursor:pointer; text-decoration:none; color:var(--ink);
+  }
+  .btn95:active{
+    border-top:2px solid var(--grey-dark); border-left:2px solid var(--grey-dark);
+    border-bottom:2px solid #fff; border-right:2px solid #fff;
+  }
+  .btn95.primary{background:var(--yellow); font-weight:bold;}
+
+  marquee{
+    background:var(--ink); color:var(--yellow); font-family:'VT323'; font-size:19px;
+    padding:6px 0; border-top:2px solid var(--ink); border-bottom:2px solid var(--ink);
+  }
+
+  /* ===== sections ===== */
+  .sec{padding:26px;}
+  .sec + .sec{border-top:2px dashed var(--grey-dark);}
+  .sec h2{font-size:18px; margin-bottom:16px;}
+  .notepad{
+    background:var(--paper); border:2px solid var(--ink); box-shadow:3px 3px 0 var(--grey-dark);
+    padding:16px 18px; font-family:'VT323'; font-size:19px; line-height:1.6;
+  }
+  .notepad .file-line{
+    background:var(--blue); color:#fff; font-family:'VT323'; font-size:15px;
+    margin:-16px -18px 12px; padding:4px 10px;
+  }
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+  .paint-box{
+    background:var(--paper); border:2px solid var(--ink); box-shadow:3px 3px 0 var(--grey-dark);
+    padding:16px;
+  }
+  .paint-box b{display:block; font-family:'Press Start 2P'; font-size:12px; margin-bottom:10px;}
+  ul.checklist{list-style:none; margin:0; padding:0; font-size:19px;}
+  ul.checklist li{margin-bottom:8px; display:flex; gap:8px;}
+  ul.checklist li::before{content:"[ ]"; font-family:monospace;}
+  ul.checklist li.done::before{content:"[X]"; color:var(--green);}
+
+  .steps4{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+  .step{background:var(--paper); border:2px solid var(--ink); box-shadow:3px 3px 0 var(--grey-dark); padding:14px;}
+  .step .num{font-family:'Press Start 2P'; font-size:16px; color:var(--red);}
+  .step p{margin:8px 0 0; font-size:18px; line-height:1.4;}
+
+  details{
+    background:var(--paper); border:2px solid var(--ink); box-shadow:3px 3px 0 var(--grey-dark);
+    padding:12px 16px; margin-bottom:10px;
+  }
+  summary{font-family:'VT323'; font-size:20px; cursor:pointer;}
+  details p{font-size:18px; margin:10px 0 0;}
+
+  .ca-box{
+    display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+    background:var(--paper); border:2px solid var(--ink); padding:10px 14px; margin-top:14px;
+  }
+  .ca-box code{font-family:monospace; font-size:15px;}
+
+  .footer{padding:22px 26px; text-align:center;}
+  .footer .socials{display:flex; gap:10px; justify-content:center; margin-bottom:14px;}
+  .footer .social{
+    width:34px; height:30px; background:var(--grey);
+    border-top:2px solid #fff; border-left:2px solid #fff;
+    border-bottom:2px solid var(--grey-dark); border-right:2px solid var(--grey-dark);
+    display:flex; align-items:center; justify-content:center; text-decoration:none; color:var(--ink);
+  }
+  .disclaimer{font-size:15px; color:var(--grey-dark); max-width:60ch; margin:0 auto; line-height:1.5;}
+
+  @media (max-width:720px){
+    .grid2, .steps4{grid-template-columns:1fr;}
+    #flyer{width:80px;}
+    body{font-size:18px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="flyer"><span class="poke-txt">stop poking me</span><img src="assets/ctrlz-flying.png" alt="CTRLZ dragon flying around the screen"></div>
+
+<div class="window">
+  <div class="titlebar">
+    <div class="t"><img src="assets/ctrlz-flying.png" alt="icon"> ctrlz.exe - Paint</div>
+    <div class="winbtns"><span>_</span><span>&#9633;</span><span onclick="alert('nice try. he lives here now.')">X</span></div>
+  </div>
+  <div class="toolbar">
+    <div class="tool">&#9998;</div>
+    <div class="tool">&#9679;</div>
+    <div class="tool">&#9635;</div>
+    <div class="tool">&#9986;</div>
+    <div class="tool" style="background:var(--red);">&nbsp;</div>
+    <div class="tool" style="background:var(--yellow);">&nbsp;</div>
+    <div class="tool" style="background:var(--blue);">&nbsp;</div>
+    <div class="tool" style="background:var(--green);">&nbsp;</div>
+  </div>
+
+  <marquee behavior="scroll" scroll-amount="6">*** $CTRLZ IS LIVE *** DRAWN IN PAINT, LAUNCHED ON CHAIN, CAN'T BE UNDONE *** 4 WINGS, 0 BRAKES *** NOT FINANCIAL ADVICE, IT'S A DRAGON *** $CTRLZ IS LIVE ***</marquee>
+
+  <div class="canvas">
+
+    <div class="hero">
+      <h1>CTRL<span>Z</span></h1>
+      <p class="sub">a dragon someone made in ms paint. four wings, zero chill, currently circling your screen looking for the buy button. there is no undo button for this one.</p>
+
+      <div class="cta-row">
+        <a class="btn95 primary" href="#buy">buy $CTRLZ</a>
+        <a class="btn95" href="#roadmap">see the plan</a>
+      </div>
+
+      <div class="ca-box">
+        <span class="pixel" style="font-size:11px;">CA:</span>
+        <code id="ca">drops at launch, not before</code>
+        <button class="btn95" style="font-size:15px; padding:4px 10px;" onclick="copyCA()">copy</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h2>who is this guy</h2>
+      <div class="notepad">
+        <div class="file-line">lore.txt - Notepad</div>
+        used to just sit in someone's living room next to a lamp and a couch, staring at the sun through the window, minding his own business.<br><br>
+        then someone opened paint, picked the blue marker, and gave him four wings. he has not touched the ground since.<br><br>
+        $CTRLZ has no roadmap to being useful. it has a dragon. that is the whole pitch. and once you buy, there is no ctrl z on that decision.
+      </div>
+
+      <div class="frame">
+        <img src="assets/ctrlz-livingroom.jpg" alt="CTRLZ dragon in the living room, original drawing">
+      </div>
+      <div class="caption">original sketch. living room and all. it says four wings right there, unedited.</div>
+    </div>
+
+    <div class="sec" id="tokenomics">
+      <h2>tokenomics</h2>
+      <div class="grid2">
+        <div class="paint-box">
+          <b>SUPPLY</b>
+          <p style="font-size:26px; margin:0;">1,000,000,000</p>
+          <p style="font-size:16px; color:var(--grey-dark); margin-top:6px;">tax 0/0, LP locked, contract renounced after launch</p>
+        </div>
+        <div class="paint-box">
+          <b>ALLOCATION</b>
+          <ul class="checklist">
+            <li class="done">60% liquidity</li>
+            <li class="done">20% community / airdrop</li>
+            <li>12% marketing</li>
+            <li>8% team, locked 6 months</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec" id="buy">
+      <h2>how to buy</h2>
+      <div class="steps4">
+        <div class="step"><div class="num">01</div><p>get a wallet. phantom or metamask, whatever you already have lying around.</p></div>
+        <div class="step"><div class="num">02</div><p>load it with a bit of SOL or ETH to cover gas and the swap.</p></div>
+        <div class="step"><div class="num">03</div><p>paste the real contract address from this page. only this page.</p></div>
+        <div class="step"><div class="num">04</div><p>swap, confirm, watch the dragon do a lap of your screen. no ctrl z after this part.</p></div>
+      </div>
+    </div>
+
+    <div class="sec" id="roadmap">
+      <h2>the plan (such as it is)</h2>
+      <div class="paint-box">
+        <ul class="checklist">
+          <li class="done">draw a dragon in paint</li>
+          <li class="done">give him too many wings</li>
+          <li class="done">launch the site and the token</li>
+          <li>get listed somewhere with charts</li>
+          <li>stickers, because obviously</li>
+          <li>the moon, eventually, probably</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sec" id="faq">
+      <h2>faq</h2>
+      <details open>
+        <summary>is this financial advice</summary>
+        <p>no. it is a hand drawn dragon with too many wings. talk to an actual advisor, not the lizard.</p>
+      </details>
+      <details>
+        <summary>why "ctrl z" if there's no undo</summary>
+        <p>that's the joke. he's named after the thing you won't be able to press once you ape in.</p>
+      </details>
+      <details>
+        <summary>why four wings</summary>
+        <p>two for flying, two for drama. more wings, more momentum, that is just how memecoins work.</p>
+      </details>
+      <details>
+        <summary>is there a tax on buy/sell</summary>
+        <p>no, 0/0. he believes capital should move as freely as he does.</p>
+      </details>
+      <details>
+        <summary>where do i find the community</summary>
+        <p>links are down in the footer. someone down there is already arguing about wing count.</p>
+      </details>
+    </div>
+
+    <div class="footer">
+      <div class="socials">
+        <a class="social" href="#" title="X">X</a>
+        <a class="social" href="#" title="Telegram">TG</a>
+        <a class="social" href="#" title="Discord">DC</a>
+        <a class="social" href="#" title="DexScreener">DEX</a>
+      </div>
+      <p class="disclaimer">$CTRLZ is a memecoin with no intrinsic value and no promise of profit. made for fun and for the dragon. crypto is risky, only put in what you can lose while still smiling about it. DYOR.</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function copyCA(){
+    navigator.clipboard.writeText("contract drops at launch, follow socials").catch(()=>{});
+    const el = document.getElementById('ca');
+    const old = el.textContent;
+    el.textContent = "copied (placeholder for now)";
+    setTimeout(()=> el.textContent = old, 1600);
+  }
+
+  // DVD-logo style bounce for the flying dragon
+  (function(){
+    const el = document.getElementById('flyer');
+    let x = 80, y = 80;
+    let vx = 2.4, vy = 1.7;
+    let w = el.offsetWidth, h = el.offsetHeight;
+
+    function resize(){ w = el.offsetWidth; h = el.offsetHeight; }
+    window.addEventListener('resize', resize);
+
+    function tick(){
+      const maxX = window.innerWidth - w;
+      const maxY = window.innerHeight - h;
+      x += vx; y += vy;
+      if(x <= 0){ x = 0; vx = Math.abs(vx); }
+      if(x >= maxX){ x = maxX; vx = -Math.abs(vx); }
+      if(y <= 0){ y = 0; vy = Math.abs(vy); }
+      if(y >= maxY){ y = maxY; vy = -Math.abs(vy); }
+      const tilt = Math.max(-14, Math.min(14, vx * 4));
+      const flip = vx < 0 ? -1 : 1;
+      el.style.transform = `translate(${x}px,${y}px) scaleX(${flip}) rotate(${flip*tilt}deg)`;
+      el.style.left = '0px'; el.style.top = '0px';
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+
+    el.addEventListener('click', ()=>{
+      vx *= 1.6; vy *= 1.6;
+      setTimeout(()=>{ vx /= 1.6; vy /= 1.6; }, 900);
+    });
+  })();
+</script>
+
+</body>
+</html>
